@@ -5,15 +5,19 @@ const thoughtController = {
     Thought.find({})
       .then(thoughtData => res.json(thoughtData))
       .catch(err => {
-        console.log(err);
         res.status(400).json(err);
       });
   },
   getThoughtsById({ params }, res) {
-    Thought.findOne({ _id: params.thoughId })
-      .then(thoughtData => res.json(thoughtData))
+    Thought.findOne({ _id: params.thoughtId })
+      .then(thoughtData => {
+        if (!thoughtData) {
+          res.status(404).json({ message: 'No thought found with that id' })
+          return;
+        }
+        res.json(thoughtData);
+      })
       .catch(err => {
-        console.log(err);
         res.status(400).json(err);
       })
   },
@@ -24,16 +28,17 @@ const thoughtController = {
         return User.findOneAndUpdate(
           { _id: params.userId },
           { $push: { thoughts: _id } },
-          { new: true }
+          { new: true, runValidators: true }
         );
       })
       .then(thoughtData => {
         if (!thoughtData) {
-          res.status(404).json({ message: 'Enter Valid data' });
+          res.status(404).json({ message: 'No user found with this id' });
           return;
         }
+        res.json(userData);
       })
-      .catch(err => res.json(err))
+      .catch(err => res.json(err));
   },
 
   updateThought({ params, body }, res) {
@@ -48,12 +53,22 @@ const thoughtController = {
   },
 
   deleteThought({ params }, res) {
-    Thought.findByIdAndDelete({ id: params.thoughtId }, { runValidators: true, new: true })
-      .then(thoughtData => {
-        if (!thoughtData) {
-          res.status(404).json({ message: 'No user found with this Id' });
+    Thought.findOneAndDelete({ id: params.thoughtId })
+      .then(deletedThought => {
+        if (!deletedThought) {
+          res.status(404).json({ message: 'No thought found with this Id' });
         }
-        res.json(thoughtData);
+        return User.findOneAndUpdate(
+          { _id: params.userId },
+          { $pull: { thoughts: params.thoughtId } },
+          { new: true }
+        );
+      })
+      .then(userData => {
+        if(!userData) {
+          res.status(404).json({ message: 'No user found with this id'})
+        }
+        res.json(userData);
       })
       .catch(err => res.json(err));
   },
@@ -72,6 +87,7 @@ const thoughtController = {
       })
       .catch(err => res.json(err));
   },
+  
   deleteReaction({ params }, res) {
     Thought.findOneAndUpdate(
       { _id: params.thoughtId },

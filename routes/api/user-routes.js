@@ -20,7 +20,7 @@ router
 router
   .route('/:id')
   .get(getUserById)
-  .post(updateUser)
+  .put(updateUser)
   .delete(deleteUser);
 
 // Routes for getting friends by Id
@@ -29,4 +29,4 @@ router
 .put(addFriend)
 .delete(deleteFriend);
 
-module.exports = router
+module.exports = router;
